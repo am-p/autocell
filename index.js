@@ -29,34 +29,6 @@ const CELL_WIDTH = app.width / BOARD_COLS;
 const CELL_HEIGTH = app.height / BOARD_ROWS;
 let currentBoard = createBoard();
 let nextBoard = createBoard();
-function computeNextBoardGoL(states, current, next) {
-    const DEAD = 0;
-    const ALIVE = 1;
-    const nbors = new Array(states).fill(0);
-    for (let r = 0; r < BOARD_ROWS; ++r) {
-        for (let c = 0; c < BOARD_COLS; ++c) {
-            countNbors(current, nbors, r, c);
-            switch (current[r][c]) {
-                case DEAD:
-                    if (nbors[ALIVE] === 3) {
-                        next[r][c] = ALIVE;
-                    }
-                    else {
-                        next[r][c] = DEAD;
-                    }
-                    break;
-                case ALIVE:
-                    if (nbors[ALIVE] === 2 || nbors[ALIVE] === 3) {
-                        next[r][c] = ALIVE;
-                    }
-                    else {
-                        next[r][c] = DEAD;
-                    }
-                    break;
-            }
-        }
-    }
-}
 function countNbors(board, nbors, r0, c0) {
     nbors.fill(0);
     for (let dr = -1; dr <= 1; ++dr) {
@@ -70,6 +42,56 @@ function countNbors(board, nbors, r0, c0) {
                     }
                 }
             }
+        }
+    }
+}
+const GoL = [
+    {
+        "53": 1,
+        "default": 0,
+    },
+    {
+        "62": 1,
+        "53": 1,
+        "default": 0,
+    }
+];
+const Seed = [
+    {
+        "62": 1,
+        "default": 0,
+    },
+    {
+        "default": 0,
+    }
+];
+function computeNextBoard(automaton, current, next) {
+    const DEAD = 0;
+    const ALIVE = 1;
+    const nbors = new Array(automaton.length).fill(0);
+    for (let r = 0; r < BOARD_ROWS; ++r) {
+        for (let c = 0; c < BOARD_COLS; ++c) {
+            countNbors(current, nbors, r, c);
+            // switch(current[r][c]) {
+            //   case DEAD:
+            //     if (nbors[ALIVE] === 3) {
+            //       next[r][c] = ALIVE; 
+            //     } else {
+            //       next[r][c] = DEAD;
+            //     }
+            //     break;
+            //   case ALIVE:
+            //     if(nbors[ALIVE] === 2 || nbors[ALIVE] === 3){
+            //       next[r][c] = ALIVE;
+            //     } else {
+            //       next[r][c] = DEAD;
+            //     }
+            //     break;
+            // }
+            const transition = automaton[current[r][c]];
+            next[r][c] = transition[nbors.join("")];
+            if (next[r][c] === undefined)
+                next[r][c] = transition["default"];
         }
     }
 }
@@ -101,7 +123,7 @@ app.addEventListener("click", (e) => {
     render(ctx, currentBoard);
 });
 next.addEventListener("click", (e) => {
-    computeNextBoardGoL(2, currentBoard, nextBoard);
+    computeNextBoard(Seed, currentBoard, nextBoard);
     [currentBoard, nextBoard] = [nextBoard, currentBoard];
     render(ctx, currentBoard);
 });

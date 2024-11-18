@@ -39,33 +39,6 @@ const CELL_HEIGTH = app.height / BOARD_ROWS;
 
 let currentBoard: Board = createBoard();
 let nextBoard: Board = createBoard();
-   
-function computeNextBoardGoL(states: number, current: Board, next: Board) {
-  const DEAD = 0;
-  const ALIVE = 1;
-  const nbors = new Array(states).fill(0);
-  for(let r = 0; r < BOARD_ROWS; ++r) {
-    for(let c = 0; c < BOARD_COLS; ++c) {
-      countNbors(current, nbors, r, c);
-      switch(current[r][c]) {
-        case DEAD:
-          if (nbors[ALIVE] === 3) {
-            next[r][c] = ALIVE; 
-          } else {
-            next[r][c] = DEAD;
-          }
-          break;
-        case ALIVE:
-          if(nbors[ALIVE] === 2 || nbors[ALIVE] === 3){
-            next[r][c] = ALIVE;
-          } else {
-            next[r][c] = DEAD;
-          }
-          break;
-      }
-    }
-  }
-}
 
 function countNbors(board: Board, nbors:number[], r0:number, c0: number){
   nbors.fill(0);
@@ -84,11 +57,75 @@ function countNbors(board: Board, nbors:number[], r0:number, c0: number){
   }
 }
 
+interface Transition {
+  [key:string]: number;
+  "default": number
+}
+
+type Automaton  = Transition[];
+
+const GoL: Automaton = [
+  {
+    "53": 1,
+    "default" : 0,
+  },
+  {
+    "62": 1,
+    "53": 1,
+    "default": 0,
+  }
+  
+];
+
+const Seed: Automaton = [
+  {
+    "62": 1,
+    "default": 0,
+  },
+  {
+    "default": 0,
+  }
+
+  
+]
+ 
+function computeNextBoard(automaton: Automaton, current: Board, next: Board) {
+  const DEAD = 0;
+  const ALIVE = 1;
+  const nbors = new Array(automaton.length).fill(0);
+  
+  for(let r = 0; r < BOARD_ROWS; ++r) {
+    for(let c = 0; c < BOARD_COLS; ++c) {
+      countNbors(current, nbors, r, c);
+      // switch(current[r][c]) {
+      //   case DEAD:
+      //     if (nbors[ALIVE] === 3) {
+      //       next[r][c] = ALIVE; 
+      //     } else {
+      //       next[r][c] = DEAD;
+      //     }
+      //     break;
+      //   case ALIVE:
+      //     if(nbors[ALIVE] === 2 || nbors[ALIVE] === 3){
+      //       next[r][c] = ALIVE;
+      //     } else {
+      //       next[r][c] = DEAD;
+      //     }
+      //     break;
+      // }
+      const transition = automaton[current[r][c]];
+      next[r][c] = transition[nbors.join("")];
+      if (next[r][c] === undefined)
+        next[r][c] = transition["default"];
+    }
+  }
+}
+
 function render(ctx : CanvasRenderingContext2D, board: Board){
   ctx.fillStyle = "#202020";
   ctx.fillRect(0, 0, app.width, app.height);
-  
   ctx.fillStyle = "#FF5050";
+  
   for(let r = 0; r< BOARD_ROWS; ++r){
     for (let c = 0; c < BOARD_COLS; ++c){
        const x = c*CELL_WIDTH;
@@ -102,8 +139,8 @@ function render(ctx : CanvasRenderingContext2D, board: Board){
 app.addEventListener("click", (e) => {
   const col = Math.floor(e.offsetX/CELL_WIDTH);
   const row = Math.floor(e.offsetY/CELL_HEIGTH);
-  
   const state = document.getElementsByName("state");
+ 
   for(let i=0; i< state.length; ++i){
     if ((state[i] as HTMLInputElement).checked){
       currentBoard[row][col] = i;
@@ -111,13 +148,12 @@ app.addEventListener("click", (e) => {
       return;
     }
   }
-  
   currentBoard[row][col] = 1;
   render(ctx, currentBoard) ;
 });
 
 next.addEventListener("click", (e) => {
-  computeNextBoardGoL(2, currentBoard, nextBoard);
+  computeNextBoard(Seed, currentBoard, nextBoard);
   [currentBoard, nextBoard] = [nextBoard, currentBoard];
   render(ctx, currentBoard);
 })
